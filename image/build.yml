@@ -1,0 +1,43 @@
+# Builds pod/image/Dockerfile and pushes it to Docker Hub. Copy this file to
+# .github/workflows/pod-image.yml in a repo that holds the `pod/` folder (the
+# project is not a git repo today — a small private repo with just pod/ is
+# enough). Secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN (Docker Hub → Account
+# settings → Personal access tokens, read/write). The image is ~6 GB compressed
+# (the 5.2 GB base + the v0.34.0 tree and pip delta); models are NOT in it.
+name: pod-image
+on:
+  workflow_dispatch:
+    inputs:
+      comfy_tag:
+        description: ComfyUI tag to bake (must match the laptop)
+        default: v0.34.0
+  push:
+    paths: ["pod/**"]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The free runner has ~14 GB free; the base image alone needs more.
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: pod
+          file: pod/image/Dockerfile
+          push: true
+          build-args: COMFY_TAG=${{ github.event.inputs.comfy_tag || 'v0.34.0' }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/indievibe-comfy:${{ github.event.inputs.comfy_tag || 'v0.34.0' }}-cu128
+            ${{ secrets.DOCKERHUB_USERNAME }}/indievibe-comfy:latest
