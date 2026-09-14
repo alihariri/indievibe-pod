@@ -67,9 +67,15 @@ Make the Docker Hub repository **private** (it carries nothing secret, but it
 is ours). The base tag is pinned in the Dockerfile; bump it when RunPod ships a
 newer cu128 image and re-run `healthcheck.sh --chunk` before trusting it.
 
-## 2. Create the template — console → Templates → **New template**
+## 2. The template — console → Templates
 
-Field for field, as the console shows them (2026-09-12):
+**Created 2026-09-12 from Ali's Chrome: `indievibe-comfy`, id `ayepypvg7p`, variant A**
+(stock image, the JSON start command, `IV_SCRIPTS_URL` + `PUBLIC_KEY`, 150 GB container
+disk, 0 GB volume disk, `/workspace`, HTTP 8188/8080/8888, TCP 22; GPU tab: the five
+recommended cards, A100 ×3 + V100 ×2 incompatible, CUDA 12.8–13.3, min vRAM 24 GB —
+every field read back after a page reload). Not set yet: `MILA_LORA_URL` and
+`HF_TOKEN` (no RunPod Secrets exist; add them under Settings → Secrets, then the env
+rows here). Field for field, as the console shows them, for a rebuild:
 
 | Field | Value |
 |---|---|
@@ -129,4 +135,8 @@ boot, unattended), the network volume keeps the models.
 
 Never change `.runpod-bundle-version` in the image: a differing marker makes
 `/start.sh` rsync `--delete` the baked tree over an existing volume copy, and
-`models-vol/` (the volume's 90 GB) is not on its exclude list.
+`models-vol/` (the volume's 90 GB) is not on its exclude list. **It happened on the
+first boot (2026-09-14):** a hand-made volume tree has NO marker, which counts as
+"differing" — the 90 GB went and were copied back from NVMe. Step 3 of the entrypoint
+now writes the image's manifest into the tree so `/start.sh` finds the bundle
+"current". First-boot record: `docs/pod-render-target.md`, 2026-09-14.

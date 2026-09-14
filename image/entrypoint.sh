@@ -62,6 +62,12 @@ relaunch_comfy() {
 DOWNLOAD=1
 if [ -d "$COMFY" ]; then
   bash "$IV/setup.sh" --code || echo "  (code step failed — ComfyUI starts as it is; see setup.sh --code)"
+  # /start.sh rsyncs its baked (older) tree over ours with --delete unless the
+  # tree carries the image's bundle manifest — a hand-made volume has none
+  # (2026-09-14: the first template boot went back to v0.30.0 that way). The
+  # manifest says "this bundle's core is applied"; ours is at the tag, newer.
+  M=/opt/comfyui-baked/.runpod-bundle-version
+  [ -f "$M" ] && cp -f "$M" "$COMFY/.runpod-bundle-version"
   if has_models; then
     bash "$IV/setup.sh" --nvme && DOWNLOAD=0
   fi
