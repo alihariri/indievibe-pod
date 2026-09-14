@@ -37,7 +37,9 @@ if awk "BEGIN{exit !($CUDA >= 13.0)}"; then pass cuda "$CUDA — a cu130 torch e
 else warn cuda "$CUDA — cu128 only: kitchen CUDA backend stays OFF, run ComfyUI with --enable-triton-backend"; fi
 
 # ── PCIe link ─────────────────────────────────────────────────────────────
-GEN=$(Q pcie.link.gen.current); W=$(Q pcie.link.width.current)
+# .max, not .current: an idle 4090 downclocks its link to Gen1 (2026-09-14, a
+# Gen4 x16 host read "Gen1 x16" and failed) — the negotiated maximum is the link.
+GEN=$(Q pcie.link.gen.max); W=$(Q pcie.link.width.max)
 if [ "${GEN:-0}" -ge $PCIE_GEN ] && [ "${W:-0}" -ge 16 ]; then pass pcie "Gen$GEN x$W"
 elif [ "${GEN:-0}" -ge $PCIE_GEN ] && [ "${W:-0}" -ge $PCIE_W ]; then warn pcie "Gen$GEN x$W — the reference 4090 was x8 too; x16 would stream FLUX faster"
 else fail pcie "Gen$GEN x$W — below Gen$PCIE_GEN x$PCIE_W; FLUX streams 34 GB per step over this link"; fi

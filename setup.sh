@@ -93,6 +93,14 @@ if [ "${1:-}" != "--models" ]; then
   git -C "$COMFY" remote get-url origin >/dev/null 2>&1 || git -C "$COMFY" remote add origin https://github.com/comfyanonymous/ComfyUI.git
   git -C "$COMFY" fetch -q --force --tags origin   # the image's own tag differs from upstream's
   git -C "$COMFY" checkout -q -f --detach "$COMFY_TAG"
+  # A checkout that rewrites models/*/put_*_here turns a models SYMLINK into a
+  # directory (2026-09-14: v0.30.0 → v0.34.0 on a pod, ComfyUI saw no models).
+  # Put the link back — NVMe copy when there is one, the volume's tree otherwise.
+  if [ -d "$COMFY/models" ] && [ ! -L "$COMFY/models" ] && [ -d "$COMFY/models-vol/diffusion_models" ] && [ "$(du -sm "$COMFY/models" | cut -f1)" -lt 20 ]; then
+    rm -rf "$COMFY/models"
+    if [ -d "${NVME_DIR:-/root/models-nvme}/diffusion_models" ]; then ln -sfn "${NVME_DIR:-/root/models-nvme}" "$COMFY/models"; else ln -sfn "$COMFY/models-vol" "$COMFY/models"; fi
+    echo "── models/ was a directory after the checkout; relinked → $(readlink "$COMFY/models") ──"
+  fi
   PIP="$COMFY/.venv-cu128/bin/pip"; [ -x "$PIP" ] || PIP=pip
   PIP_CONSTRAINT=${PIP_CONSTRAINT:-/opt/comfyui-runtime-constraints.txt} "$PIP" install -q -r "$COMFY/requirements.txt"
   [ "${1:-}" = "--code" ] && exit 0
